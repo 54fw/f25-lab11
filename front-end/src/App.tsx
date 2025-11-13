@@ -34,7 +34,7 @@ class App extends React.Component<Props, GameState> {
     /**
      * state has type GameState as specified in the class inheritance.
      */
-    this.state = { cells: [] }
+    this.state = { cells: [], currentPlayer: null, winner: null };
   }
 
   /**
@@ -45,7 +45,8 @@ class App extends React.Component<Props, GameState> {
   newGame = async () => {
     const response = await fetch('/newgame');
     const json = await response.json();
-    this.setState({ cells: json['cells'] });
+    this.setState({ cells: json['cells'], currentPlayer: json['currentPlayer'], winner: json['winner'] }
+    );
   }
 
   /**
@@ -61,7 +62,7 @@ class App extends React.Component<Props, GameState> {
       e.preventDefault();
       const response = await fetch(`/play?x=${x}&y=${y}`)
       const json = await response.json();
-      this.setState({ cells: json['cells'] });
+      this.setState({ cells: json['cells'], currentPlayer: json['currentPlayer'], winner: json['winner'] });
     }
   }
 
@@ -86,6 +87,38 @@ class App extends React.Component<Props, GameState> {
       )
   }
 
+  undo = async () => {
+    const response = await fetch('/undo');
+    const json = await response.json();
+    this.setState({ cells: json['cells'], currentPlayer: json['currentPlayer'], winner: json['winner'] });
+  }
+
+  renderInstructions(): React.ReactNode {
+    const { currentPlayer, winner } = this.state;
+
+    if (winner) {
+      return (
+        <div id="instructions">
+          <p>Winner: {winner}. Click "New Game" to start a new game.</p>
+        </div>
+      );
+    }
+
+    if (currentPlayer) {
+      return (
+        <div id="instructions">
+          <p>Current player: {currentPlayer}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div id="instructions">
+        <p>Click "New Game" to start the game.</p>
+      </div>
+    );
+  }
+
   /**
    * This function will call after the HTML is rendered.
    * We update the initial state by creating a new game.
@@ -102,26 +135,25 @@ class App extends React.Component<Props, GameState> {
     }
   }
 
+
   /**
    * The only method you must define in a React.Component subclass.
    * @returns the React element via JSX.
    * @see https://reactjs.org/docs/react-component.html
    */
   render(): React.ReactNode {
-    /**
-     * We use JSX to define the template. An advantage of JSX is that you
-     * can treat HTML elements as code.
-     * @see https://reactjs.org/docs/introducing-jsx.html
-     */
     return (
-      <div>
+      <div className="app">
+
+        {this.renderInstructions()}
+
         <div id="board">
           {this.state.cells.map((cell, i) => this.createCell(cell, i))}
         </div>
+
         <div id="bottombar">
-          <button onClick={/* get the function, not call the function */this.newGame}>New Game</button>
-          {/* Exercise: implement Undo function */}
-          <button>Undo</button>
+          <button onClick={this.newGame}>New Game</button>
+          <button onClick={async () => this.undo()}>Undo</button>
         </div>
       </div>
     );
